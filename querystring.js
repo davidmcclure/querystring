@@ -1,3 +1,7 @@
+// This is a modified version of Node's querystring for the browser.
+// Based on Node 0.9.2.
+// Author: Rafael Xavier <rxaviers at gmail.com>
+
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -21,8 +25,8 @@
 
 // Query String Utilities
 
-var QueryString = exports;
-var urlDecode = process.binding('http_parser').urlDecode;
+(function(exports, undefined) {
+var QueryString = exports.QueryString = {};
 
 
 // If obj.hasOwnProperty has been overridden, then calling
@@ -33,80 +37,13 @@ function hasOwnProperty(obj, prop) {
 }
 
 
-function charCode(c) {
-  return c.charCodeAt(0);
-}
-
-
-// a safe fast alternative to decodeURIComponent
-QueryString.unescapeBuffer = function(s, decodeSpaces) {
-  var out = new Buffer(s.length);
-  var state = 'CHAR'; // states: CHAR, HEX0, HEX1
-  var n, m, hexchar;
-
-  for (var inIndex = 0, outIndex = 0; inIndex <= s.length; inIndex++) {
-    var c = s.charCodeAt(inIndex);
-    switch (state) {
-      case 'CHAR':
-        switch (c) {
-          case charCode('%'):
-            n = 0;
-            m = 0;
-            state = 'HEX0';
-            break;
-          case charCode('+'):
-            if (decodeSpaces) c = charCode(' ');
-            // pass thru
-          default:
-            out[outIndex++] = c;
-            break;
-        }
-        break;
-
-      case 'HEX0':
-        state = 'HEX1';
-        hexchar = c;
-        if (charCode('0') <= c && c <= charCode('9')) {
-          n = c - charCode('0');
-        } else if (charCode('a') <= c && c <= charCode('f')) {
-          n = c - charCode('a') + 10;
-        } else if (charCode('A') <= c && c <= charCode('F')) {
-          n = c - charCode('A') + 10;
-        } else {
-          out[outIndex++] = charCode('%');
-          out[outIndex++] = c;
-          state = 'CHAR';
-          break;
-        }
-        break;
-
-      case 'HEX1':
-        state = 'CHAR';
-        if (charCode('0') <= c && c <= charCode('9')) {
-          m = c - charCode('0');
-        } else if (charCode('a') <= c && c <= charCode('f')) {
-          m = c - charCode('a') + 10;
-        } else if (charCode('A') <= c && c <= charCode('F')) {
-          m = c - charCode('A') + 10;
-        } else {
-          out[outIndex++] = charCode('%');
-          out[outIndex++] = hexchar;
-          out[outIndex++] = c;
-          break;
-        }
-        out[outIndex++] = 16 * n + m;
-        break;
-    }
-  }
-
-  // TODO support returning arbitrary buffers.
-
-  return out.slice(0, outIndex - 1);
-};
-
-
 QueryString.unescape = function(s, decodeSpaces) {
-  return QueryString.unescapeBuffer(s, decodeSpaces).toString();
+  var decoded = decodeURIComponent(s);
+  if (decodeSpaces) {
+    return decoded.replace(/\+/g, ' ');
+  } else {
+    return decoded;
+  }
 };
 
 
@@ -213,3 +150,4 @@ QueryString.parse = QueryString.decode = function(qs, sep, eq, options) {
 
   return obj;
 };
+}(this));
