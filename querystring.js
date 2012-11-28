@@ -1,3 +1,7 @@
+// This is a modified version of Node's querystring for the browser.
+// Based on Node 0.9.2.
+// Author: Rafael Xavier <rxaviers at gmail.com>
+
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -21,8 +25,13 @@
 
 // Query String Utilities
 
-var QueryString = exports;
-var urlDecode = process.binding('http_parser').urlDecode;
+(function(exports, undefined) {
+var QueryString = exports.QueryString = {};
+
+var urlDecode;
+if ( typeof process !== "undefined" && process.binding ) {
+  urlDecode = process.binding('http_parser').urlDecode;
+}
 
 
 // If obj.hasOwnProperty has been overridden, then calling
@@ -106,7 +115,12 @@ QueryString.unescapeBuffer = function(s, decodeSpaces) {
 
 
 QueryString.unescape = function(s, decodeSpaces) {
-  return QueryString.unescapeBuffer(s, decodeSpaces).toString();
+  var decoded = decodeURIComponent(s);
+  if (decodeSpaces) {
+    return decoded.replace(/\+/g, ' ');
+  } else {
+    return decoded;
+  }
 };
 
 
@@ -213,3 +227,4 @@ QueryString.parse = QueryString.decode = function(qs, sep, eq, options) {
 
   return obj;
 };
+}(this));
