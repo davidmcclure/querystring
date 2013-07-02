@@ -25,8 +25,22 @@
 
 // Query String Utilities
 
-(function(exports, undefined) {
-var QueryString = exports.QueryString = {};
+(function(root, factory) {
+  if (typeof exports === 'object') {
+    // Does not work with strict CommonJS, but
+    // only CommonJS-like enviroments that support module.exports,
+    // like Node.
+    module.exports = factory();
+  } else if (typeof define === 'function' && define.amd) {
+    // AMD. Register as an anonymous module.
+    define(factory);
+  } else {
+    // Browser globals (root is window)
+    root.QueryString = factory();
+  }
+}(this, function() {
+
+var QueryString = {};
 
 
 // If obj.hasOwnProperty has been overridden, then calling
@@ -150,4 +164,7 @@ QueryString.parse = QueryString.decode = function(qs, sep, eq, options) {
 
   return obj;
 };
-}(this));
+
+return QueryString;
+
+}));
