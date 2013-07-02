@@ -40,131 +40,131 @@
   }
 }(this, function() {
 
-var QueryString = {};
+  var QueryString = {};
 
 
-// If obj.hasOwnProperty has been overridden, then calling
-// obj.hasOwnProperty(prop) will break.
-// See: https://github.com/joyent/node/issues/1707
-function hasOwnProperty(obj, prop) {
-  return Object.prototype.hasOwnProperty.call(obj, prop);
-}
-
-
-QueryString.unescape = function(s, decodeSpaces) {
-  var decoded = decodeURIComponent(s);
-  if (decodeSpaces) {
-    return decoded.replace(/\+/g, ' ');
-  } else {
-    return decoded;
-  }
-};
-
-
-QueryString.escape = function(str) {
-  return encodeURIComponent(str);
-};
-
-var stringifyPrimitive = function(v) {
-  switch (typeof v) {
-    case 'string':
-      return v;
-
-    case 'boolean':
-      return v ? 'true' : 'false';
-
-    case 'number':
-      return isFinite(v) ? v : '';
-
-    default:
-      return '';
-  }
-};
-
-
-QueryString.stringify = QueryString.encode = function(obj, sep, eq, name) {
-  sep = sep || '&';
-  eq = eq || '=';
-  if (obj === null) {
-    obj = undefined;
+  // If obj.hasOwnProperty has been overridden, then calling
+  // obj.hasOwnProperty(prop) will break.
+  // See: https://github.com/joyent/node/issues/1707
+  function hasOwnProperty(obj, prop) {
+    return Object.prototype.hasOwnProperty.call(obj, prop);
   }
 
-  if (typeof obj === 'object') {
-    return Object.keys(obj).map(function(k) {
-      var ks = QueryString.escape(stringifyPrimitive(k)) + eq;
-      if (Array.isArray(obj[k])) {
-        return obj[k].map(function(v) {
-          return ks + QueryString.escape(stringifyPrimitive(v));
-        }).join(sep);
+
+  QueryString.unescape = function(s, decodeSpaces) {
+    var decoded = decodeURIComponent(s);
+    if (decodeSpaces) {
+      return decoded.replace(/\+/g, ' ');
+    } else {
+      return decoded;
+    }
+  };
+
+
+  QueryString.escape = function(str) {
+    return encodeURIComponent(str);
+  };
+
+  var stringifyPrimitive = function(v) {
+    switch (typeof v) {
+      case 'string':
+        return v;
+
+      case 'boolean':
+        return v ? 'true' : 'false';
+
+      case 'number':
+        return isFinite(v) ? v : '';
+
+      default:
+        return '';
+    }
+  };
+
+
+  QueryString.stringify = QueryString.encode = function(obj, sep, eq, name) {
+    sep = sep || '&';
+    eq = eq || '=';
+    if (obj === null) {
+      obj = undefined;
+    }
+
+    if (typeof obj === 'object') {
+      return Object.keys(obj).map(function(k) {
+        var ks = QueryString.escape(stringifyPrimitive(k)) + eq;
+        if (Array.isArray(obj[k])) {
+          return obj[k].map(function(v) {
+            return ks + QueryString.escape(stringifyPrimitive(v));
+          }).join(sep);
+        } else {
+          return ks + QueryString.escape(stringifyPrimitive(obj[k]));
+        }
+      }).join(sep);
+
+    }
+
+    if (!name) return '';
+    return QueryString.escape(stringifyPrimitive(name)) + eq +
+           QueryString.escape(stringifyPrimitive(obj));
+  };
+
+  // Parse a key=val string.
+  QueryString.parse = QueryString.decode = function(qs, sep, eq, options) {
+    sep = sep || '&';
+    eq = eq || '=';
+    var obj = {};
+
+    if (typeof qs !== 'string' || qs.length === 0) {
+      return obj;
+    }
+
+    var regexp = /\+/g;
+    qs = qs.split(sep);
+
+    var maxKeys = 1000;
+    if (options && typeof options.maxKeys === 'number') {
+      maxKeys = options.maxKeys;
+    }
+
+    var len = qs.length;
+    // maxKeys <= 0 means that we should not limit keys count
+    if (maxKeys > 0 && len > maxKeys) {
+      len = maxKeys;
+    }
+
+    for (var i = 0; i < len; ++i) {
+      var x = qs[i].replace(regexp, '%20'),
+          idx = x.indexOf(eq),
+          kstr, vstr, k, v;
+
+      if (idx >= 0) {
+        kstr = x.substr(0, idx);
+        vstr = x.substr(idx + 1);
       } else {
-        return ks + QueryString.escape(stringifyPrimitive(obj[k]));
+        kstr = x;
+        vstr = '';
       }
-    }).join(sep);
 
-  }
+      try {
+        k = decodeURIComponent(kstr);
+        v = decodeURIComponent(vstr);
+      } catch (e) {
+        k = QueryString.unescape(kstr, true);
+        v = QueryString.unescape(vstr, true);
+      }
 
-  if (!name) return '';
-  return QueryString.escape(stringifyPrimitive(name)) + eq +
-         QueryString.escape(stringifyPrimitive(obj));
-};
+      if (!hasOwnProperty(obj, k)) {
+        obj[k] = v;
+      } else if (Array.isArray(obj[k])) {
+        obj[k].push(v);
+      } else {
+        obj[k] = [obj[k], v];
+      }
+    }
 
-// Parse a key=val string.
-QueryString.parse = QueryString.decode = function(qs, sep, eq, options) {
-  sep = sep || '&';
-  eq = eq || '=';
-  var obj = {};
-
-  if (typeof qs !== 'string' || qs.length === 0) {
     return obj;
-  }
+  };
 
-  var regexp = /\+/g;
-  qs = qs.split(sep);
-
-  var maxKeys = 1000;
-  if (options && typeof options.maxKeys === 'number') {
-    maxKeys = options.maxKeys;
-  }
-
-  var len = qs.length;
-  // maxKeys <= 0 means that we should not limit keys count
-  if (maxKeys > 0 && len > maxKeys) {
-    len = maxKeys;
-  }
-
-  for (var i = 0; i < len; ++i) {
-    var x = qs[i].replace(regexp, '%20'),
-        idx = x.indexOf(eq),
-        kstr, vstr, k, v;
-
-    if (idx >= 0) {
-      kstr = x.substr(0, idx);
-      vstr = x.substr(idx + 1);
-    } else {
-      kstr = x;
-      vstr = '';
-    }
-
-    try {
-      k = decodeURIComponent(kstr);
-      v = decodeURIComponent(vstr);
-    } catch (e) {
-      k = QueryString.unescape(kstr, true);
-      v = QueryString.unescape(vstr, true);
-    }
-
-    if (!hasOwnProperty(obj, k)) {
-      obj[k] = v;
-    } else if (Array.isArray(obj[k])) {
-      obj[k].push(v);
-    } else {
-      obj[k] = [obj[k], v];
-    }
-  }
-
-  return obj;
-};
-
-return QueryString;
+  return QueryString;
 
 }));
